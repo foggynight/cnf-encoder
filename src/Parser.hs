@@ -48,43 +48,57 @@ lexStr str =
 
 -- Parser ----------------------------------------------------------------------
 
--- TODO: Allow "*" to be omitted.
+type Parser = [Token] -> Either String (Expr, [Token])
 
-parseVar :: [Token] -> (Expr, [Token])
-parseVar toks =
-  case toks of
-    [] -> (Expr_Err "parseVar: no tokens to parse", toks)
-    (Tok_Par_L:ts1) ->
-      let (expr, ts2) = parseExpr ts1
-      in case ts2 of
-           (Tok_Par_R:ts3) -> (expr, ts3)
-           _ -> (Expr_Err "parseVar: missing right parenthesis", ts2)
-    ((Tok_Var var):toks_rest) -> (Expr_Var var, toks_rest)
-    _ -> (Expr_Err "parseVar: invalid token", toks)
+parseVar :: Parser
+parseVar [] = Left "parseVar: no tokens to parse"
+parseVar (Tok_Par_L:ts1) =
+  case parseExpr ts1 of
+    Left msg -> Left msg
+    Right (expr, (Tok_Par_R:ts2)) -> Right (expr, ts2)
+    Right (_, _) -> Left "parseVar: missing right parenthesis"
+parseVar ((Tok_Var var):toks_rest) = Right (Expr_Var var, toks_rest)
+parseVar (tok:_) = Left $ "parseVar: invalid token: " ++ show tok
 
-parseLit :: [Token] -> (Expr, [Token])
+parseLit :: Parser
 parseLit (Tok_Minus:ts1) =
-  let (var, ts2) = parseVar ts1
-  in (Expr_Not var, ts2)
+  case parseVar ts1 of
+    Left msg         -> Left msg
+    Right (var, ts2) -> Right (Expr_Not var, ts2)
 parseLit toks = parseVar toks
 
-parseFact :: [Token] -> (Expr, [Token])
+parseFact :: Parser
 parseFact toks = parseLit toks
 
-parseTerm :: [Token] -> (Expr, [Token])
+parseTerm :: Parser
 parseTerm toks =
-  let (fact, toks_rest) = parseFact toks in
-  case toks_rest of
-    [] -> (fact, [])
-    (Tok_Star:ts1) -> let (other_term, ts2) = parseTerm ts1
-                      in (Expr_And fact other_term, ts2)
-    _ -> (fact, toks_rest)
+  case parseFact toks of
+    Left msg -> Left msg
+    Right (fact, []) -> Right (fact, [])
+    Right (fact, (Tok_Star:ts1)) ->
+      case parseTerm ts1 of
+        Left msg -> Left msg
+        Right (other_term, ts2) -> Right (Expr_And fact other_term, ts2)
+    Right (fact, ts1) ->
+      case parseTerm ts1 of
+        Left _ -> Right (fact, ts1)
+        Right (other_term, ts2) -> Right (Expr_And fact other_term, ts2)
 
-parseExpr :: [Token] -> (Expr, [Token])
+parseExpr :: Parser
 parseExpr toks =
-  let (term, toks_rest) = parseTerm toks in
-  case toks_rest of
-    [] -> (term, [])
-    (Tok_Plus:ts1) -> let (other_expr, ts2) = parseExpr ts1
-                      in (Expr_Or term other_expr, ts2)
-    _ -> (term, toks_rest)
+  case parseTerm toks of
+    Left msg -> Left msg
+    Right (term, []) -> Right (term, [])
+    Right (term, (Tok_Plus:ts1)) ->
+      case parseExpr ts1 of
+        Left msg                -> Left msg
+        Right (other_expr, ts2) -> Right (Expr_Or term other_expr, ts2)
+    Right (term, toks_rest) -> Right (term, toks_rest)
+
+parse :: String -> Either String Expr
+parse str =
+  let toks = lexStr str in
+  case parseExpr toks of
+    Left msg -> Left msg
+    Right (expr, []) -> Right expr
+    Right (_, ts) -> Left $ "error: parse: trailing tokens: " ++ show ts
