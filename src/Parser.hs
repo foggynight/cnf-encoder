@@ -78,11 +78,13 @@ parseTerm toks =
     Right (fact, (Tok_Star:ts1)) ->
       case parseTerm ts1 of
         Left msg -> Left msg
-        Right (other_term, ts2) -> Right (Expr_And fact other_term, ts2)
+        Right ((Expr_And and_es), ts2) -> Right (Expr_And (fact:and_es), ts2)
+        Right (other_term, ts2) -> Right (Expr_And [fact, other_term], ts2)
     Right (fact, ts1) ->
       case parseTerm ts1 of
         Left _ -> Right (fact, ts1)
-        Right (other_term, ts2) -> Right (Expr_And fact other_term, ts2)
+        Right ((Expr_And and_es), ts2) -> Right (Expr_And (fact:and_es), ts2)
+        Right (other_term, ts2) -> Right (Expr_And [fact, other_term], ts2)
 
 parseExpr :: Parser
 parseExpr toks =
@@ -92,7 +94,8 @@ parseExpr toks =
     Right (term, (Tok_Plus:ts1)) ->
       case parseExpr ts1 of
         Left msg                -> Left msg
-        Right (other_expr, ts2) -> Right (Expr_Or term other_expr, ts2)
+        Right ((Expr_Or or_es), ts2) -> Right (Expr_Or (term:or_es), ts2)
+        Right (other_expr, ts2) -> Right (Expr_Or [term, other_expr], ts2)
     Right (term, toks_rest) -> Right (term, toks_rest)
 
 parse :: String -> Either String Expr
