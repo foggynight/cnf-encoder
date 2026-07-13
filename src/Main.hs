@@ -12,7 +12,7 @@ main' expr = do
   hPutStrLn stderr "DIMACS CNF:"
   case exprToCnf expr of
     Left err  -> hPutStrLn stderr err
-    Right cnf -> putStr $ dimacsCnf cnf
+    Right cnf -> print cnf -- putStr $ dimacsCnf cnf
 
 main :: IO ()
 main = do

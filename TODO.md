@@ -1,1 +1,1 @@
-- [ ] Replace variable strings with variable indices in var_names. Use array for var_names?
+- [x] replace variable strings with variable indices in CNF

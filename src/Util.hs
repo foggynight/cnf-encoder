@@ -1,9 +1,9 @@
 module Util where
 
-import Data.Set (fromList, toList)
+import qualified Data.Set as S (fromList, toList)
 
 remDups :: Ord a => [a] -> [a]
-remDups = toList . fromList
+remDups = S.toList . S.fromList
 
 consMaybe :: Maybe a -> Maybe [a] -> Maybe [a]
 consMaybe = liftA2 (:)

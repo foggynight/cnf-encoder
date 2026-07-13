@@ -31,6 +31,7 @@ exprIsCnf :: Expr -> Bool
 exprIsCnf (Expr_And es) = and $ map exprIsClause es
 exprIsCnf expr = exprIsClause expr
 
+-- Note: `remDups` also sorts list.
 exprVars :: Expr -> [String]
 exprVars expr = remDups $ go expr
   where go (Expr_Var var) = [var]
