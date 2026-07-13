@@ -1,6 +1,7 @@
 module Main where
 
---import Expr
+import CNF
+import Expr
 import Parser
 
 main :: IO ()

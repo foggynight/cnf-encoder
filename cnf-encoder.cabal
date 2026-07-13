@@ -21,4 +21,5 @@ executable cnf-encoder
     main-is:          Main.hs
     other-modules:    Expr, Parser
     default-language: Haskell2010
-    build-depends:    base ^>=4.20.2.0
+    build-depends:    base ^>=4.20.2.0,
+                      containers >= 0.7
