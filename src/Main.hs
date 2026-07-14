@@ -10,7 +10,9 @@ import Util
 mainConvertToCnf :: Expr -> IO Expr
 mainConvertToCnf expr = do
   let flat_expr = exprFlatten expr
-  hPutStrLn stderr $ "Flattened: " ++ show flat_expr
+  hPutStrLn stderr $ "Flattened AND/OR: " ++ show flat_expr
+  let dm_expr = exprDeMorgans flat_expr
+  hPutStrLn stderr $ "DeMorgan's Laws:  " ++ show dm_expr
   pure flat_expr
 
 main' :: Expr -> IO ()
@@ -20,7 +22,7 @@ main' expr = do
 
   final_expr <-
     if exprIsCnf expr
-    then do hPutStrLn stderr "Expression already in CNF."
+    then do hPutStrLn stderr "Expression is already in CNF."
             pure expr
     else do hPutStrLn stderr "Converting expression to CNF..."
             mainConvertToCnf expr
