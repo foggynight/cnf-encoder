@@ -43,6 +43,8 @@ exprClauses :: Expr -> [Expr]
 exprClauses (Expr_And es) = es
 exprClauses expr = [expr]
 
+-- TODO: Remove AND/OR of single child.
+-- TODO: What about duplicate literals and clauses etc?
 exprFlatten :: Expr -> Expr
 exprFlatten (Expr_And es) = Expr_And $ go es
   where go [] = []
@@ -63,3 +65,19 @@ exprToNnf (Expr_Not (Expr_And es)) =
 exprToNnf (Expr_Not (Expr_Or es)) =
   Expr_And $ map (exprToNnf . Expr_Not) es
 exprToNnf e = e
+
+-- Distribute ORs over ANDs of an expression.
+-- Note: Assumes input Expr has been flattened.
+exprOrOverAnd :: Expr -> Expr
+exprOrOverAnd (Expr_Var var) = Expr_Var var
+exprOrOverAnd (Expr_Not e) = Expr_Not $ exprOrOverAnd e
+exprOrOverAnd (Expr_And es) = Expr_And $ map exprOrOverAnd es
+exprOrOverAnd (Expr_Or es) =
+  Expr_And $ go [] es
+  where
+    go :: [Expr] -> [Expr] -> [Expr]
+    go taken [] = [Expr_Or $ reverse taken]
+    go taken ((Expr_Var var):exprs) = go ((Expr_Var var):taken) exprs
+    go taken ((Expr_Not e):exprs) = go ((Expr_Not e):taken) exprs
+    go taken ((Expr_And and_es):exprs) = concat $ map (\e -> go (e : taken) exprs) and_es
+    go _ ((Expr_Or _):_) = error "error: exprOrOverAnd: expression not flattened"

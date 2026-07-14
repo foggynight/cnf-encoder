@@ -11,12 +11,15 @@ import Util
 mainConvertToCnf :: Expr -> IO Expr
 mainConvertToCnf expr = do
   let flat_expr = exprFlatten expr
-  hPutStrLn stderr $ "Flattened AND/OR:     " ++ show flat_expr
+  hPutStrLn stderr $ "Flattened AND/OR:        " ++ show flat_expr
 
   let nnf_expr = exprFlatten $ exprToNnf flat_expr
-  hPutStrLn stderr $ "Negation Normal Form: " ++ show nnf_expr
+  hPutStrLn stderr $ "Negation Normal Form:    " ++ show nnf_expr
 
-  let final_expr = nnf_expr
+  let cnf_expr = exprFlatten $ exprOrOverAnd nnf_expr
+  hPutStrLn stderr $ "Distributed OR over AND: " ++ show cnf_expr
+
+  let final_expr = cnf_expr
   when (not $ exprIsCnf final_expr) $
     hPutStrLn stderr $ "Error: Final expression is not in CNF."
   pure final_expr
@@ -27,7 +30,7 @@ mainExprToDimacs expr = do
   hNewline stderr
 
   final_expr <-
-    if exprIsCnf expr
+    if False && exprIsCnf expr  -- TEMP
     then do hPutStrLn stderr "Expression is already in CNF."
             pure expr
     else do hPutStrLn stderr "Converting expression to CNF..."
