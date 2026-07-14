@@ -1,3 +1,5 @@
+-- CNF: Conjunctive Normal Form
+
 module CNF where
 
 import Control.Monad.ST (runST)

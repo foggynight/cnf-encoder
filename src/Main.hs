@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Monad (when)
 import System.IO (hPutStrLn, stderr)
 
 import CNF
@@ -10,10 +11,15 @@ import Util
 mainConvertToCnf :: Expr -> IO Expr
 mainConvertToCnf expr = do
   let flat_expr = exprFlatten expr
-  hPutStrLn stderr $ "Flattened AND/OR: " ++ show flat_expr
-  let dm_expr = exprFlatten $ exprDeMorgans flat_expr
-  hPutStrLn stderr $ "DeMorgan's Laws:  " ++ show dm_expr
-  pure dm_expr
+  hPutStrLn stderr $ "Flattened AND/OR:     " ++ show flat_expr
+
+  let nnf_expr = exprFlatten $ exprToNnf flat_expr
+  hPutStrLn stderr $ "Negation Normal Form: " ++ show nnf_expr
+
+  let final_expr = nnf_expr
+  when (not $ exprIsCnf final_expr) $
+    hPutStrLn stderr $ "Error: Final expression is not in CNF."
+  pure final_expr
 
 mainExprToDimacs :: Expr -> IO ()
 mainExprToDimacs expr = do

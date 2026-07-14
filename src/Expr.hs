@@ -45,19 +45,21 @@ exprClauses expr = [expr]
 
 exprFlatten :: Expr -> Expr
 exprFlatten (Expr_And es) = Expr_And $ go es
-  where
-    go [] = []
-    go ((Expr_And xs):rest) = go (map exprFlatten xs) ++ go rest
-    go (x:rest) = exprFlatten x : go rest
+  where go [] = []
+        go ((Expr_And xs):rest) = go (map exprFlatten xs) ++ go rest
+        go (x:rest) = exprFlatten x : go rest
 exprFlatten (Expr_Or es) = Expr_Or $ go es
-  where
-    go [] = []
-    go ((Expr_Or xs):rest) = go (map exprFlatten xs) ++ go rest
-    go (x:rest) = exprFlatten x : go rest
+  where go [] = []
+        go ((Expr_Or xs):rest) = go (map exprFlatten xs) ++ go rest
+        go (x:rest) = exprFlatten x : go rest
+exprFlatten (Expr_Not (Expr_Not e)) = exprFlatten e
 exprFlatten (Expr_Not e) = Expr_Not $ exprFlatten e
 exprFlatten e = e
 
-exprDeMorgans :: Expr -> Expr
-exprDeMorgans (Expr_Not (Expr_And es)) = Expr_Or $ map (exprDeMorgans . Expr_Not) es
-exprDeMorgans (Expr_Not (Expr_Or es)) = Expr_And $ map (exprDeMorgans . Expr_Not) es
-exprDeMorgans e = e
+-- NNF: Negation Normal Form
+exprToNnf :: Expr -> Expr
+exprToNnf (Expr_Not (Expr_And es)) =
+  Expr_Or $ map (exprToNnf . Expr_Not) es
+exprToNnf (Expr_Not (Expr_Or es)) =
+  Expr_And $ map (exprToNnf . Expr_Not) es
+exprToNnf e = e
