@@ -43,13 +43,13 @@ exprClauses :: Expr -> [Expr]
 exprClauses (Expr_And es) = es
 exprClauses expr = [expr]
 
--- TODO: Remove AND/OR of single child.
--- TODO: What about duplicate literals and clauses etc?
 exprFlatten :: Expr -> Expr
+exprFlatten (Expr_And [e]) = e
 exprFlatten (Expr_And es) = Expr_And $ go es
   where go [] = []
         go ((Expr_And xs):rest) = go (map exprFlatten xs) ++ go rest
         go (x:rest) = exprFlatten x : go rest
+exprFlatten (Expr_Or [e]) = e
 exprFlatten (Expr_Or es) = Expr_Or $ go es
   where go [] = []
         go ((Expr_Or xs):rest) = go (map exprFlatten xs) ++ go rest
