@@ -60,10 +60,8 @@ exprFlatten e = e
 
 -- NNF: Negation Normal Form
 exprToNnf :: Expr -> Expr
-exprToNnf (Expr_Not (Expr_And es)) =
-  Expr_Or $ map (exprToNnf . Expr_Not) es
-exprToNnf (Expr_Not (Expr_Or es)) =
-  Expr_And $ map (exprToNnf . Expr_Not) es
+exprToNnf (Expr_Not (Expr_And es)) = Expr_Or $ map (exprToNnf . Expr_Not) es
+exprToNnf (Expr_Not (Expr_Or es)) = Expr_And $ map (exprToNnf . Expr_Not) es
 exprToNnf e = e
 
 -- Distribute ORs over ANDs of an expression.
@@ -72,12 +70,11 @@ exprOrOverAnd :: Expr -> Expr
 exprOrOverAnd (Expr_Var var) = Expr_Var var
 exprOrOverAnd (Expr_Not e) = Expr_Not $ exprOrOverAnd e
 exprOrOverAnd (Expr_And es) = Expr_And $ map exprOrOverAnd es
-exprOrOverAnd (Expr_Or es) =
-  Expr_And $ go [] es
+exprOrOverAnd (Expr_Or es) = Expr_And $ go [] es
   where
     go :: [Expr] -> [Expr] -> [Expr]
     go taken [] = [Expr_Or $ reverse taken]
     go taken ((Expr_Var var):exprs) = go ((Expr_Var var):taken) exprs
     go taken ((Expr_Not e):exprs) = go ((Expr_Not e):taken) exprs
-    go taken ((Expr_And and_es):exprs) = concat $ map (\e -> go (e : taken) exprs) and_es
+    go taken ((Expr_And and_es):exprs) = concat $ map (\e -> go (e:taken) exprs) and_es
     go _ ((Expr_Or _):_) = error "error: exprOrOverAnd: expression not flattened"

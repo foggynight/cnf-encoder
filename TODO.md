@@ -1,1 +1,5 @@
 - [x] replace variable strings with variable indices in CNF
+- [ ] output VarMap to ".map" file?
+- [ ] add implication and biconditional
+- [ ] add Tseitin encoding
+- [ ] add QBF and PBF
