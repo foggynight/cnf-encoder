@@ -54,6 +54,7 @@ exprFlatten (Expr_Or es) = Expr_Or $ go es
     go [] = []
     go ((Expr_Or xs):rest) = go (map exprFlatten xs) ++ go rest
     go (x:rest) = exprFlatten x : go rest
+exprFlatten (Expr_Not e) = Expr_Not $ exprFlatten e
 exprFlatten e = e
 
 exprDeMorgans :: Expr -> Expr

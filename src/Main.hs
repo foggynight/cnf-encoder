@@ -11,12 +11,12 @@ mainConvertToCnf :: Expr -> IO Expr
 mainConvertToCnf expr = do
   let flat_expr = exprFlatten expr
   hPutStrLn stderr $ "Flattened AND/OR: " ++ show flat_expr
-  let dm_expr = exprDeMorgans flat_expr
+  let dm_expr = exprFlatten $ exprDeMorgans flat_expr
   hPutStrLn stderr $ "DeMorgan's Laws:  " ++ show dm_expr
-  pure flat_expr
+  pure dm_expr
 
-main' :: Expr -> IO ()
-main' expr = do
+mainExprToDimacs :: Expr -> IO ()
+mainExprToDimacs expr = do
   hPutStrLn stderr $ "Expression: " ++ show expr
   hNewline stderr
 
@@ -39,4 +39,4 @@ main = do
   hPutStrLn stderr $ "Input: " ++ input
   case parse input of
     Left err   -> hPutStrLn stderr err
-    Right expr -> main' expr
+    Right expr -> mainExprToDimacs expr
