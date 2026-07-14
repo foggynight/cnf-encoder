@@ -1,9 +1,8 @@
 # Boolean Expression Grammer
 
 ```text
-E -> T ("+" E)?
-T -> F ("*"? T)?
-F -> L
-L -> "-"? V
-V -> [_a-zA-Z0-9]+ | "(" E ")"
+EXPR -> TERM ("+" EXPR)?
+TERM -> LIT ("*"? TERM)?
+LIT -> "-" LIT | VAR
+VAR -> [_a-zA-Z0-9]+ | "(" EXPR ")"
 ```

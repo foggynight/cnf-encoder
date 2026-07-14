@@ -4,6 +4,7 @@ import Data.Char (isAlphaNum, isSpace)
 import Data.List (isPrefixOf)
 
 import Expr
+import Util
 
 -- Lexer -----------------------------------------------------------------------
 
@@ -20,7 +21,7 @@ data Token
   deriving (Show)
 
 isVarPrefix :: Char -> Bool
-isVarPrefix c = c == '_' || isAlphaNum c
+isVarPrefix c = (c == '_') || isAlphaNum c
 
 nextToken :: String -> (Maybe Token, String)
 nextToken [] = (Nothing, [])
@@ -43,65 +44,62 @@ lexStr [] = []
 lexStr str =
   let (mb_tok, rest) = nextToken str
   in case mb_tok of
-    Nothing -> lexStr rest
+    Nothing  -> lexStr rest
     Just tok -> tok : lexStr rest
 
 -- Parser ----------------------------------------------------------------------
 
-type Parser = [Token] -> Either String (Expr, [Token])
+type Parser = [Token] -> Either ErrorMsg (Expr, [Token])
 
 parseVar :: Parser
 parseVar [] = Left "parseVar: no tokens to parse"
 parseVar (Tok_Par_L:ts1) =
   case parseExpr ts1 of
-    Left msg -> Left msg
+    Left msg                      -> Left msg
     Right (expr, (Tok_Par_R:ts2)) -> Right (expr, ts2)
-    Right (_, _) -> Left "parseVar: missing right parenthesis"
+    Right (_, _)                  -> Left "parseVar: missing right parenthesis"
 parseVar ((Tok_Var var):toks_rest) = Right (Expr_Var var, toks_rest)
 parseVar (tok:_) = Left $ "parseVar: invalid token: " ++ show tok
 
 parseLit :: Parser
 parseLit (Tok_Minus:ts1) =
-  case parseVar ts1 of
+  case parseLit ts1 of
     Left msg         -> Left msg
-    Right (var, ts2) -> Right (Expr_Not var, ts2)
+    Right (lit, ts2) -> Right (Expr_Not lit, ts2)
 parseLit toks = parseVar toks
-
-parseFact :: Parser
-parseFact toks = parseLit toks
 
 parseTerm :: Parser
 parseTerm toks =
-  case parseFact toks of
-    Left msg -> Left msg
-    Right (fact, []) -> Right (fact, [])
-    Right (fact, (Tok_Star:ts1)) ->
-      case parseTerm ts1 of
-        Left msg -> Left msg
-        Right ((Expr_And and_es), ts2) -> Right (Expr_And (fact:and_es), ts2)
-        Right (other_term, ts2) -> Right (Expr_And [fact, other_term], ts2)
-    Right (fact, ts1) ->
-      case parseTerm ts1 of
-        Left _ -> Right (fact, ts1)
-        Right ((Expr_And and_es), ts2) -> Right (Expr_And (fact:and_es), ts2)
-        Right (other_term, ts2) -> Right (Expr_And [fact, other_term], ts2)
+  case parseLit toks of
+    Left msg                   -> Left msg
+    Right (lit, [])            -> Right (lit, [])
+    Right (lit, (Tok_Star:ts)) -> go lit ts
+    Right (lit, ts)            -> go lit ts
+  where
+    go lit terms =
+      case parseTerm terms of
+        Left _                        -> Right (lit, terms)
+        Right ((Expr_And and_es), ts) -> Right (Expr_And (lit : and_es), ts)
+        Right (other_term, ts)        -> Right (Expr_And [lit, other_term], ts)
 
 parseExpr :: Parser
-parseExpr toks =
-  case parseTerm toks of
-    Left msg -> Left msg
-    Right (term, []) -> Right (term, [])
-    Right (term, (Tok_Plus:ts1)) ->
-      case parseExpr ts1 of
-        Left msg                -> Left msg
-        Right ((Expr_Or or_es), ts2) -> Right (Expr_Or (term:or_es), ts2)
-        Right (other_expr, ts2) -> Right (Expr_Or [term, other_expr], ts2)
-    Right (term, toks_rest) -> Right (term, toks_rest)
+parseExpr tokens =
+  case parseTerm tokens of
+    Left msg                    -> Left msg
+    Right (term, [])            -> Right (term, [])
+    Right (term, (Tok_Plus:ts)) -> go term ts
+    Right (term, ts)            -> Right (term, ts)
+  where
+    go term toks =
+      case parseExpr toks of
+        Left msg                    -> Left msg
+        Right ((Expr_Or or_es), ts) -> Right (Expr_Or (term : or_es), ts)
+        Right (other_expr, ts)      -> Right (Expr_Or [term, other_expr], ts)
 
-parse :: String -> Either String Expr
+parse :: String -> Either ErrorMsg Expr
 parse str =
   let toks = lexStr str in
   case parseExpr toks of
-    Left msg -> Left msg
+    Left msg         -> Left msg
     Right (expr, []) -> Right expr
-    Right (_, ts) -> Left $ "error: parse: trailing tokens: " ++ show ts
+    Right (_, ts)    -> Left $ "error: parse: trailing tokens: " ++ show ts

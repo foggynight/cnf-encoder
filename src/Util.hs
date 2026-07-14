@@ -3,6 +3,8 @@ module Util where
 import qualified Data.Set as S (fromList, toList)
 import System.IO (Handle, hPutChar)
 
+type ErrorMsg = String
+
 hNewline :: Handle -> IO ()
 hNewline handle = hPutChar handle '\n'
 
