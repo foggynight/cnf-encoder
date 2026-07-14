@@ -74,11 +74,13 @@ parseTerm toks =
     Left msg                   -> Left msg
     Right (lit, [])            -> Right (lit, [])
     Right (lit, (Tok_Star:ts)) -> go lit ts
-    Right (lit, ts)            -> go lit ts
+    Right (lit, ts1)           -> case go lit ts1 of
+                                    Left _ -> Right (lit, ts1)
+                                    Right (expr, ts2) -> Right (expr, ts2)
   where
     go lit terms =
       case parseTerm terms of
-        Left _                        -> Right (lit, terms)
+        Left msg                      -> Left msg
         Right ((Expr_And and_es), ts) -> Right (Expr_And (lit : and_es), ts)
         Right (other_term, ts)        -> Right (Expr_And [lit, other_term], ts)
 
@@ -102,4 +104,4 @@ parse str =
   case parseExpr toks of
     Left msg         -> Left msg
     Right (expr, []) -> Right expr
-    Right (_, ts)    -> Left $ "error: parse: trailing tokens: " ++ show ts
+    Right (_, ts)    -> Left $ "parse: trailing tokens: " ++ show ts

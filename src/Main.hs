@@ -30,7 +30,7 @@ mainExprToDimacs expr = do
   hNewline stderr
 
   final_expr <-
-    if False && exprIsCnf expr  -- TEMP
+    if exprIsCnf expr
     then do hPutStrLn stderr "Expression is already in CNF."
             pure expr
     else do hPutStrLn stderr "Converting expression to CNF..."
@@ -39,7 +39,7 @@ mainExprToDimacs expr = do
 
   hPutStrLn stderr "DIMACS CNF:"
   case exprToCnf final_expr of
-    Left err  -> hPutStrLn stderr err
+    Left err  -> hPutStrLn stderr $ "error: " ++ err
     Right cnf -> putStr $ dimacsCnf cnf
 
 main :: IO ()
@@ -47,5 +47,5 @@ main = do
   input <- getContents
   hPutStrLn stderr $ "Input: " ++ input
   case parse input of
-    Left err   -> hPutStrLn stderr err
+    Left err   -> hPutStrLn stderr $ "error: " ++ err
     Right expr -> mainExprToDimacs expr

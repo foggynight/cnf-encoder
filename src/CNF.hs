@@ -49,7 +49,7 @@ exprToClause var_map expr_lit =
 
 exprToCnf :: Expr -> Either String CNF
 exprToCnf expr
-  | not $ exprIsCnf expr = Left "error: exprToCnf: input Expr not in CNF"
+  | not $ exprIsCnf expr = Left "exprToCnf: input Expr not in CNF"
   | exprIsLit expr = Right $ go (Expr_And [Expr_Or [expr]])
   | exprIsClause expr = Right $ go (Expr_And [expr])
   | otherwise {- Expr_And -} = Right $ go expr
