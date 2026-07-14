@@ -65,7 +65,7 @@ dimacsHeaderLine :: Int -> Int -> String
 dimacsHeaderLine n m = "p cnf " ++ show n ++ " " ++ show m
 
 dimacsVarMap :: VarMap -> String
-dimacsVarMap var_map = "c " ++ (filter (/= '"') $ show var_map)
+dimacsVarMap var_map = "c VarMap: " ++ (filter (/= '"') $ show var_map)
 
 dimacsClauseLine :: Clause -> String
 dimacsClauseLine [] = "0"

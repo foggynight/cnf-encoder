@@ -5,18 +5,36 @@ import System.IO (hPutStrLn, stderr)
 import CNF
 import Expr
 import Parser
+import Util
+
+mainConvertToCnf :: Expr -> IO Expr
+mainConvertToCnf expr = do
+  let flat_expr = exprFlatten expr
+  hPutStrLn stderr $ "Flattened: " ++ show flat_expr
+  pure flat_expr
 
 main' :: Expr -> IO ()
 main' expr = do
   hPutStrLn stderr $ "Expression: " ++ show expr
+  hNewline stderr
+
+  final_expr <-
+    if exprIsCnf expr
+    then do hPutStrLn stderr "Expression already in CNF."
+            pure expr
+    else do hPutStrLn stderr "Converting expression to CNF..."
+            mainConvertToCnf expr
+  hNewline stderr
+
   hPutStrLn stderr "DIMACS CNF:"
-  case exprToCnf expr of
+  case exprToCnf final_expr of
     Left err  -> hPutStrLn stderr err
-    Right cnf -> print cnf -- putStr $ dimacsCnf cnf
+    Right cnf -> putStr $ dimacsCnf cnf
 
 main :: IO ()
 main = do
   input <- getContents
+  hPutStrLn stderr $ "Input: " ++ input
   case parse input of
     Left err   -> hPutStrLn stderr err
     Right expr -> main' expr

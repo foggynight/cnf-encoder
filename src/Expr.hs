@@ -47,11 +47,11 @@ exprFlatten :: Expr -> Expr
 exprFlatten (Expr_And es) = Expr_And $ go es
   where
     go [] = []
-    go ((Expr_And xs):rest) = map exprFlatten xs ++ go rest
+    go ((Expr_And xs):rest) = go (map exprFlatten xs) ++ go rest
     go (x:rest) = exprFlatten x : go rest
 exprFlatten (Expr_Or es) = Expr_Or $ go es
   where
     go [] = []
-    go ((Expr_Or xs):rest) = map exprFlatten xs ++ go rest
+    go ((Expr_Or xs):rest) = go (map exprFlatten xs) ++ go rest
     go (x:rest) = exprFlatten x : go rest
 exprFlatten e = e
