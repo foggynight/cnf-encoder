@@ -10,14 +10,20 @@ import Util
 
 mainConvertToCnf :: Expr -> IO Expr
 mainConvertToCnf expr = do
-  let flat_expr = exprFlatten expr
-  hPutStrLn stderr $ "Flattened AND/OR:        " ++ show flat_expr
+  let nbicon_expr = exprElimBicon expr
+  hPutStrLn stderr $ "Eliminated Biconditionals: " ++ show nbicon_expr
+
+  let nimply_expr = exprElimImply nbicon_expr
+  hPutStrLn stderr $ "Eliminated Implications:   " ++ show nimply_expr
+
+  let flat_expr = exprFlatten nimply_expr
+  hPutStrLn stderr $ "Flattened NOT/AND/OR:      " ++ show flat_expr
 
   let nnf_expr = exprFlatten $ exprToNnf flat_expr
-  hPutStrLn stderr $ "Negation Normal Form:    " ++ show nnf_expr
+  hPutStrLn stderr $ "Negation Normal Form:      " ++ show nnf_expr
 
   let cnf_expr = exprFlatten $ exprOrOverAnd nnf_expr
-  hPutStrLn stderr $ "Distributed OR over AND: " ++ show cnf_expr
+  hPutStrLn stderr $ "Distributed OR over AND:   " ++ show cnf_expr
 
   let final_expr = cnf_expr
   when (not $ exprIsCnf final_expr) $
@@ -33,7 +39,8 @@ mainExprToDimacs expr = do
     if exprIsCnf expr
     then do hPutStrLn stderr "Expression is already in CNF."
             pure expr
-    else do hPutStrLn stderr "Converting expression to CNF..."
+    else do hPutStrLn stderr   "Converting expression to CNF..."
+            hPutStrLn stderr $ "Initial Expression:        " ++ show expr
             mainConvertToCnf expr
   hNewline stderr
 
@@ -45,7 +52,7 @@ mainExprToDimacs expr = do
 main :: IO ()
 main = do
   input <- getContents
-  hPutStrLn stderr $ "Input: " ++ input
+  hPutStrLn stderr $ "Input:      " ++ input
   case parse input of
     Left err   -> hPutStrLn stderr $ "error: " ++ err
     Right expr -> mainExprToDimacs expr
