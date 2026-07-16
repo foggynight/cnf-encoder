@@ -1,6 +1,9 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Main where
 
 import Control.Monad (when)
+import Language.Haskell.TH.Quote (quoteExp)
 import System.IO (hPutStrLn, stderr)
 
 import CNF
@@ -11,21 +14,20 @@ import Util
 mainConvertToCnf :: Expr -> IO Expr
 mainConvertToCnf expr = do
   let nbicon_expr = exprElimBicon expr
-  hPutStrLn stderr $ "Eliminated Biconditionals: " ++ show nbicon_expr
-
   let nimply_expr = exprElimImply nbicon_expr
-  hPutStrLn stderr $ "Eliminated Implications:   " ++ show nimply_expr
+  let nnf_expr    = exprToNnf nimply_expr
+  let flat_expr   = exprFlatten nnf_expr
+  let ntriv_expr  = {- exprElimTriv -} flat_expr
+  let cnf_expr    = exprFlatten $ exprOrOverAnd ntriv_expr
+  let final_expr  = cnf_expr
 
-  let flat_expr = exprFlatten nimply_expr
-  hPutStrLn stderr $ "Flattened NOT/AND/OR:      " ++ show flat_expr
+  hPutStrLn stderr $ $(quoteExp (padRightQQ 32 ' ') "Eliminated Biconditionals:") ++ show nbicon_expr
+  hPutStrLn stderr $ $(quoteExp (padRightQQ 32 ' ') "Eliminated Implications:") ++ show nimply_expr
+  hPutStrLn stderr $ $(quoteExp (padRightQQ 32 ' ') "Negation Normal Form:") ++ show nnf_expr
+  hPutStrLn stderr $ $(quoteExp (padRightQQ 32 ' ') "Flattened NOT/AND/OR:") ++ show flat_expr
+  hPutStrLn stderr $ $(quoteExp (padRightQQ 32 ' ') "Eliminated Trivial Clauses:") ++ show flat_expr
+  hPutStrLn stderr $ $(quoteExp (padRightQQ 32 ' ') "Distributed OR over AND:") ++ show cnf_expr
 
-  let nnf_expr = exprFlatten $ exprToNnf flat_expr
-  hPutStrLn stderr $ "Negation Normal Form:      " ++ show nnf_expr
-
-  let cnf_expr = exprFlatten $ exprOrOverAnd nnf_expr
-  hPutStrLn stderr $ "Distributed OR over AND:   " ++ show cnf_expr
-
-  let final_expr = cnf_expr
   when (not $ exprIsCnf final_expr) $
     hPutStrLn stderr $ "Error: Final expression is not in CNF."
   pure final_expr
@@ -39,8 +41,8 @@ mainExprToDimacs expr = do
     if exprIsCnf expr
     then do hPutStrLn stderr "Expression is already in CNF."
             pure expr
-    else do hPutStrLn stderr   "Converting expression to CNF..."
-            hPutStrLn stderr $ "Initial Expression:        " ++ show expr
+    else do hPutStrLn stderr "Converting expression to CNF..."
+            hPutStrLn stderr $ $(quoteExp (padRightQQ 32 ' ') "Initial Expression:") ++ show expr
             mainConvertToCnf expr
   hNewline stderr
 

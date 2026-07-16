@@ -12,7 +12,9 @@ data Expr
 
 instance Show Expr where
   show (Expr_Var var) = var
-  show (Expr_Not expr) = "(- " ++ show expr ++ ")"
+  show (Expr_Not expr) = if exprIsVar expr
+                         then "-" ++ show expr
+                         else "(- " ++ show expr ++ ")"
   show (Expr_And es) = "(*" ++ concat (map (\e -> " " ++ show e) es) ++ ")"
   show (Expr_Or es) = "(+" ++ concat (map (\e -> " " ++ show e) es) ++ ")"
   show (Expr_Imply el er) = "(-> " ++ show el ++ " " ++ show er ++ ")"
