@@ -19,7 +19,7 @@ executable cnf-encoder
     import:             warnings
     hs-source-dirs:     src
     main-is:            Main.hs
-    other-modules:      CNF, Expr, Parser, Util
+    other-modules:      CNF, DIMACS, Expr, Parser, Util
     default-language:   Haskell2010
     default-extensions: TemplateHaskell
     build-depends:      base ^>= 4.20.2.0,
