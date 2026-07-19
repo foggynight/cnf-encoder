@@ -1,5 +1,6 @@
 - [x] replace variable strings with variable indices in CNF
 - [x] add implication and biconditional
+- [ ] only output processing step when resulted in change
 - [ ] output VarMap to ".map" file?
 - [ ] remove duplicate child expressions?
 - [ ] add Tseitin encoding

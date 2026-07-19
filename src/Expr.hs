@@ -66,6 +66,7 @@ exprToNnf (Expr_Imply _ _) = error "error: exprToNnf: implication not eliminated
 exprToNnf (Expr_Bicon _ _) = error "error: exprToNnf: biconditional not eliminated"
 exprToNnf (Expr_Not (Expr_And es)) = Expr_Or $ map (exprToNnf . Expr_Not) es
 exprToNnf (Expr_Not (Expr_Or es)) = Expr_And $ map (exprToNnf . Expr_Not) es
+exprToNnf (Expr_Not (Expr_Not e)) = e
 exprToNnf (Expr_And es) = Expr_And $ map exprToNnf es
 exprToNnf (Expr_Or es) = Expr_Or $ map exprToNnf es
 exprToNnf e = e
@@ -124,26 +125,6 @@ exprElimImply (Expr_And es) = Expr_And $ map exprElimImply es
 exprElimImply (Expr_Or es) = Expr_Or $ map exprElimImply es
 exprElimImply (Expr_Imply el er) = Expr_Or [Expr_Not l, r]
   where (l, r) = (exprElimImply el, exprElimImply er)
-exprElimImply (Expr_Bicon el er) = Expr_Bicon (exprElimImply el) (exprElimImply er)
+exprElimImply (Expr_Bicon el er) =
+  Expr_Bicon (exprElimImply el) (exprElimImply er)
 exprElimImply e = e
-
-containsNegation' :: Expr -> [Expr] -> Bool
-containsNegation' _ [] = False
-containsNegation' targ (expr:exprs)
-  | targ == expr = True
-  | otherwise    = containsNegation' targ exprs
-
-containsNegation :: Expr -> [Expr] -> Bool
-containsNegation (Expr_Not targ) exprs = containsNegation' targ exprs
-containsNegation targ exprs = containsNegation' (Expr_Not targ) exprs
-
-exprNonTrivialClauses :: Expr -> Expr
-exprNonTrivialClauses (Expr_And es) = Expr_And $ filter (not . trivial) es
-  where
-    trivial :: Expr -> Bool
-    trivial (Expr_Or lits) =
-      foldl (\acc x -> acc || containsNegation x lits) False lits
-    trivial e = error $
-      "error: exprNonTrivialClauses: expression not in CNF: " ++ show e
-exprNonTrivialClauses e = error $
-  "error: exprNonTrivialClauses: expression not in CNF: " ++ show e

@@ -3,11 +3,13 @@
 module CNF where
 
 import Control.Monad.ST (runST)
+import Data.List (intercalate, sort)
 import Data.Maybe (fromJust)
 import qualified Data.Vector as V
 import Data.Vector.Algorithms.Search (binarySearch)
 
 import Expr
+import Util
 
 type VarMap = V.Vector String
 
@@ -19,7 +21,17 @@ data CNF = CNF
   , cnf_n_clauses :: Int
   , cnf_var_map :: VarMap
   , cnf_clauses :: [Clause]
-  } deriving (Show)
+  }
+
+showClause :: Clause -> String
+showClause clause =
+    let lits_str = intercalate "," $ map show clause
+    in "{" ++ lits_str ++ "}"
+
+instance Show CNF where
+  show (CNF _ _ _ clauses) =
+    let clauses_str = intercalate "," $ map showClause clauses
+    in "{" ++ clauses_str ++ "}"
 
 strListToVarMap :: [String] -> VarMap
 strListToVarMap = V.fromList
@@ -41,13 +53,14 @@ exprToLit _ _ = Nothing
 
 exprToClause :: VarMap -> Expr -> Maybe Clause
 exprToClause _ (Expr_And _) = Nothing
-exprToClause var_map (Expr_Or es)  = mapM (exprToLit var_map) es
+exprToClause var_map (Expr_Or es) = mapM (exprToLit var_map) es
 exprToClause var_map expr_lit =
   case exprToLit var_map expr_lit of
     Nothing -> Nothing
     Just lit -> Just [lit]
 
-exprToCnf :: Expr -> Either String CNF
+-- Converts Expr to CNF. Sorts literals of each clause, and sorts clauses.
+exprToCnf :: Expr -> Either ErrorMsg CNF
 exprToCnf expr
   | not $ exprIsCnf expr = Left "exprToCnf: input Expr not in CNF"
   | exprIsLit expr = Right $ go (Expr_And [Expr_Or [expr]])
@@ -57,25 +70,43 @@ exprToCnf expr
     go e =
       let var_map = strListToVarMap $ exprVars e
           expr_clauses = exprClauses e
-          clauses = fromJust $ mapM (exprToClause var_map) expr_clauses
+          clauses = sort $ map sort $ fromJust $
+                    mapM (exprToClause var_map) expr_clauses
       in CNF { cnf_n_vars = length var_map
              , cnf_n_clauses = length expr_clauses
              , cnf_var_map = var_map
              , cnf_clauses = clauses }
 
-dimacsHeaderLine :: Int -> Int -> String
-dimacsHeaderLine n m = "p cnf " ++ show n ++ " " ++ show m
+clauseTrivial :: Clause -> Bool
+clauseTrivial [] = False
+clauseTrivial (lit:lits) = elem (-lit) lits || clauseTrivial lits
 
-dimacsVarMap :: VarMap -> String
-dimacsVarMap var_map = "c VarMap: " ++ (filter (/= '"') $ show var_map)
+cnfNonTrivialClauses :: CNF -> CNF
+cnfNonTrivialClauses (CNF n_vars _ var_map clauses) =
+  CNF n_vars (length new_clauses) var_map new_clauses
+  where new_clauses = filter (not . clauseTrivial) clauses
 
-dimacsClauseLine :: Clause -> String
-dimacsClauseLine [] = "0"
-dimacsClauseLine (lit:lits) = show lit ++ " " ++ dimacsClauseLine lits
+litsUnique :: Clause -> Clause
+litsUnique [] = []
+litsUnique (l:ls)
+  | elem l ls = litsUnique ls
+  | otherwise = l : litsUnique ls
 
-dimacsCnf :: CNF -> String
-dimacsCnf (CNF n_vars n_clauses var_map clauses) =
-  let var_names_line = dimacsVarMap var_map
-      header_line = dimacsHeaderLine n_vars n_clauses
-      clause_lines = map dimacsClauseLine clauses
-  in unlines $ var_names_line : header_line : clause_lines
+cnfUniqueLits :: CNF -> CNF
+cnfUniqueLits (CNF n_vars _ var_map clauses) =
+  CNF n_vars (length new_clauses) var_map new_clauses
+  where new_clauses = map litsUnique clauses
+
+clauseUnique :: [Clause] -> Clause -> Bool
+clauseUnique clauses targ = not $ elem targ clauses
+
+clausesUnique :: [Clause] -> [Clause]
+clausesUnique [] = []
+clausesUnique (c:cs)
+  | elem c cs = clausesUnique cs
+  | otherwise = c : clausesUnique cs
+
+cnfUniqueClauses :: CNF -> CNF
+cnfUniqueClauses (CNF n_vars _ var_map clauses) =
+  CNF n_vars (length new_clauses) var_map new_clauses
+  where new_clauses = clausesUnique clauses
